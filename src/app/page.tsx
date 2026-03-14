@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-background/80 backdrop-blur-md z-50 border-b border-gray-200 dark:border-gray-800">
+      <nav className="fixed top-0 w-full bg-background/80 backdrop-blur-md z-50 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Image src="/Groovo-red.svg" alt="Groovo" width={120} height={40} className="h-8 w-auto" />
@@ -55,7 +55,7 @@ export default function Home() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-20 px-6 bg-gray-50 dark:bg-gray-900/50">
+      <section id="about" className="py-20 px-6 bg-neutral-900 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">About Groovo</h2>
@@ -154,7 +154,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-6 bg-gray-50 dark:bg-gray-900/50">
+      <section id="features" className="py-20 px-6 bg-neutral-900 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Powerful Features</h2>
@@ -212,7 +212,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 py-12 px-6">
+      <footer className="py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="text-center md:text-left">
@@ -234,7 +234,7 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          <div className="border-t border-gray-200 dark:border-gray-800 mt-8 pt-8 text-center text-sm text-gray-600 dark:text-gray-400">
+          <div className="dark:border-gray-800 mt-8 pt-8 text-center text-sm text-gray-600 dark:text-gray-400">
             <p>&copy; {new Date().getFullYear()} Groovo. All rights reserved.</p>
           </div>
         </div>
