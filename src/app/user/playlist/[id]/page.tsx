@@ -7,7 +7,7 @@ import PlaylistSkeleton from "@/src/app/components/ui/playlistSkeleton";
 import SongContextMenu from "@/src/app/components/ui/songContextMenu";
 import CreatePlaylistModal from "@/src/app/components/ui/createPlaylistModal";
 import { useParams } from "next/navigation";
-import { fetchWithAuth, addSongToPlaylist, updatePlaylist, deletePlaylist } from "@/src/app/utils/api";
+import { fetchWithAuth, addSongToPlaylist, updatePlaylist, deletePlaylist, createShareLink } from "@/src/app/utils/api";
 import { useSignalR } from "@/src/app/contexts/SignalRContext";
 import Button from "@/src/app/components/ui/button";
 import { PlayerContext } from "@/src/app/user/layout";
@@ -44,6 +44,7 @@ export default function PlaylistPage() {
   const [loading, setLoading] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; songId: string } | null>(null);
   const [addedStatus, setAddedStatus] = useState<{ playlistId: string; success: boolean } | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const userId = useUserId();
   const router = useRouter();
@@ -119,6 +120,22 @@ export default function PlaylistPage() {
       
       // Clear status after a delay
       setTimeout(() => setAddedStatus(null), 3000);
+    }
+  };
+
+  const handleSharePlaylist = async () => {
+    if (!id) return;
+
+    setIsSharing(true);
+    try {
+      const share = await createShareLink(1, id as string);
+      await navigator.clipboard.writeText(share.url);
+      toast.success("Playlist link copied to clipboard");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(errorMessage || "Failed to share playlist");
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -223,6 +240,16 @@ export default function PlaylistPage() {
               className="px-8"
             >
               {hasJoinedPlaylist ? 'Joined' : isConnected ? 'Join & Play' : 'Connect & Play'}
+            </Button>
+            <Button
+              onClick={handleSharePlaylist}
+              disabled={isSharing}
+              variant="outline"
+              size="md"
+              width="auto"
+              className="ml-3"
+            >
+              {isSharing ? "Sharing..." : "Share"}
             </Button>
             {playlist && userId && Array.isArray((playlist as any).owners) && ((playlist as any).owners.findIndex((o: any) => String(o?.id || o) === String(userId)) !== -1) && (
               <Button

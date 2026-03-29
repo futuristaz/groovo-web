@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { fetchUserPlaylists } from "@/src/app/utils/api";
+import { createShareLink, fetchUserPlaylists } from "@/src/app/utils/api";
 import { useUserId, useUserType } from "@/src/app/utils/auth";
+import { toast } from "sonner";
 
 interface Playlist {
   id: string;
@@ -32,6 +33,7 @@ export default function SongContextMenu({
   const [loading, setLoading] = useState(false);
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [addingToPlaylist, setAddingToPlaylist] = useState<string | null>(null);
+  const [sharingTrack, setSharingTrack] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const userId = useUserId();
   const userType = useUserType();
@@ -92,6 +94,21 @@ export default function SongContextMenu({
 
   if (!isOpen) return null;
 
+  const handleShareTrack = async () => {
+    setSharingTrack(true);
+    try {
+      const share = await createShareLink(0, songId);
+      await navigator.clipboard.writeText(share.url);
+      toast.success("Track link copied to clipboard");
+      onClose();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(message || "Failed to share track");
+    } finally {
+      setSharingTrack(false);
+    }
+  };
+
   const handleAddToPlaylist = async (playlistId: string) => {
     setAddingToPlaylist(playlistId);
     try {
@@ -116,26 +133,35 @@ export default function SongContextMenu({
       }}
     >
       {!showPlaylists ? (
-        <button
-          className="w-full px-4 py-2 text-left hover:bg-neutral-700 transition-colors flex items-center justify-between"
-          onClick={() => setShowPlaylists(true)}
-        >
-          <span>Add to playlist</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        <>
+          <button
+            className="w-full px-4 py-2 text-left hover:bg-neutral-700 transition-colors"
+            onClick={handleShareTrack}
+            disabled={sharingTrack}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
+            {sharingTrack ? "Sharing..." : "Share track"}
+          </button>
+          <button
+            className="w-full px-4 py-2 text-left hover:bg-neutral-700 transition-colors flex items-center justify-between"
+            onClick={() => setShowPlaylists(true)}
+          >
+            <span>Add to playlist</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        </>
       ) : (
         <div>
           <div className="px-4 py-2 text-sm text-gray-400 border-b border-neutral-700 flex items-center gap-2">
