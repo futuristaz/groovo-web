@@ -310,3 +310,79 @@ export async function updateUserInfo(userInfo: { name: string; bio: string }) {
 
   return null;
 }
+
+export type ShareResourceType = 0 | 1;
+
+export interface CreateShareLinkResponse {
+  shareLinkId: string;
+  token: string;
+  url: string;
+  resourceType: ShareResourceType;
+  resourceId: string;
+  createdAt: string;
+}
+
+export interface SharedResourceResponse {
+  resourceType: ShareResourceType;
+  track: any | null;
+  playlist: any | null;
+}
+
+function unwrapApiResponse<T>(payload: any): T {
+  return (payload?.data ?? payload) as T;
+}
+
+function buildFrontendShareUrl(token: string): string {
+  const configuredBase = process.env.NEXT_PUBLIC_APP_BASE;
+
+  if (configuredBase) {
+    return `${configuredBase.replace(/\/$/, '')}/share/${token}`;
+  }
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/share/${token}`;
+  }
+
+  return `/share/${token}`;
+}
+
+export async function createShareLink(resourceType: ShareResourceType, resourceId: string): Promise<CreateShareLinkResponse> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetchWithAuth(`${base}/api/v1/Shares`, {
+    method: 'POST',
+    body: JSON.stringify({ resourceType, resourceId }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(`Create share link failed: ${res.status} ${res.statusText} ${text || ''}`);
+  }
+
+  const json = await res.json().catch(() => null);
+  const data = unwrapApiResponse<CreateShareLinkResponse>(json);
+
+  // Backend returns an API URL (/api/v1/shares/{token}); frontend should use the UI route (/share/{token}).
+  return {
+    ...data,
+    url: buildFrontendShareUrl(data.token),
+  };
+}
+
+export async function resolveShareLink(token: string): Promise<SharedResourceResponse> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetch(`${base}/api/v1/Shares/${token}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(`Resolve share link failed: ${res.status} ${res.statusText} ${text || ''}`);
+  }
+
+  const json = await res.json().catch(() => null);
+  return unwrapApiResponse<SharedResourceResponse>(json);
+}
