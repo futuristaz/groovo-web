@@ -328,6 +328,12 @@ export interface SharedResourceResponse {
   playlist: any | null;
 }
 
+export interface SearchAllResponse {
+  users: any[];
+  songs: any[];
+  playlists: any[];
+}
+
 function unwrapApiResponse<T>(payload: any): T {
   return (payload?.data ?? payload) as T;
 }
@@ -385,4 +391,26 @@ export async function resolveShareLink(token: string): Promise<SharedResourceRes
 
   const json = await res.json().catch(() => null);
   return unwrapApiResponse<SharedResourceResponse>(json);
+}
+
+export async function searchAll(query: string): Promise<SearchAllResponse> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const url = `${base}/api/v1/Search?query=${encodeURIComponent(query)}`;
+  const res = await fetchWithAuth(url, {
+    method: 'GET',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(`Search failed: ${res.status} ${res.statusText} ${text || ''}`);
+  }
+
+  const json = await res.json().catch(() => null);
+  const data = unwrapApiResponse<any>(json) || {};
+
+  return {
+    users: data.users || data.Users || [],
+    songs: data.songs || data.Songs || [],
+    playlists: data.playlists || data.Playlists || [],
+  };
 }
