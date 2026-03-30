@@ -2,19 +2,31 @@
 
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUserType, useUserName } from "@/src/app/utils/auth";
+import { searchAll, type SearchAllResponse } from "@/src/app/utils/api";
 import Link from "../ui/link";
 
 export default function TopNav() {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchAllResponse>({ users: [], songs: [], playlists: [] });
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const userType = useUserType();
   const userName = useUserName();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
+
+  const isAuthor = String(userType || "").toLowerCase() === "author";
+  const playlistBasePath = isAuthor ? "/artist/playlist" : "/user/playlist";
 
   useEffect(() => {
     setOpen(false);
+    setSearchOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -27,6 +39,57 @@ export default function TopNav() {
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
   }, []);
+
+  useEffect(() => {
+    function onClickSearchOutside(e: MouseEvent) {
+      if (!searchRef.current) return;
+      if (searchRef.current.contains(e.target as Node)) return;
+      setSearchOpen(false);
+    }
+
+    document.addEventListener("click", onClickSearchOutside);
+    return () => document.removeEventListener("click", onClickSearchOutside);
+  }, []);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+
+    if (trimmed.length === 0) {
+      setSearchResults({ users: [], songs: [], playlists: [] });
+      setSearchError(null);
+      setIsSearching(false);
+      return;
+    }
+
+    const handle = setTimeout(async () => {
+      setIsSearching(true);
+      setSearchError(null);
+      try {
+        const results = await searchAll(trimmed);
+        setSearchResults(results);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setSearchError(message || "Search failed");
+        setSearchResults({ users: [], songs: [], playlists: [] });
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(handle);
+  }, [query]);
+
+  function handlePlaylistOpen(playlistId: string) {
+    setSearchOpen(false);
+    setQuery("");
+    router.push(`${playlistBasePath}/${playlistId}`);
+  }
+
+  function roleLabel(role: number) {
+    if (role === 2) return "Admin";
+    if (role === 1) return "Author";
+    return "User";
+  }
 
   function handleLogout() {
     try {
@@ -56,17 +119,78 @@ export default function TopNav() {
         </div>
 
         {/* Center: search bar */}
-        {/*
-        <div className="flex-1 max-w-xl">
+        <div className="flex-1 max-w-xl" ref={searchRef}>
           <div className="relative">
             <input
               aria-label="Search"
               className="w-full bg-neutral-800 text-sm placeholder:text-neutral-400 text-white rounded-md py-2 px-3 outline-none focus:ring-2 focus:ring-green-600"
-              placeholder="Search"
+              placeholder="Search songs, playlists, users"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => setSearchOpen(true)}
             />
+
+            {searchOpen && (
+              <div className="absolute mt-2 w-full bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-30 max-h-96 overflow-y-auto">
+                {query.trim().length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-neutral-400">Start typing to search</p>
+                ) : isSearching ? (
+                  <p className="px-3 py-2 text-sm text-neutral-400">Searching...</p>
+                ) : searchError ? (
+                  <p className="px-3 py-2 text-sm text-red-400">{searchError}</p>
+                ) : (
+                  <div className="py-1">
+                    <div className="px-3 pt-2 pb-1 text-xs uppercase tracking-wider text-neutral-500">Playlists</div>
+                    {searchResults.playlists.length === 0 ? (
+                      <p className="px-3 py-1 text-sm text-neutral-500">No playlists</p>
+                    ) : (
+                      searchResults.playlists.slice(0, 5).map((playlist: any) => (
+                        <button
+                          key={playlist.id}
+                          className="w-full text-left px-3 py-2 hover:bg-neutral-800"
+                          onClick={() => handlePlaylistOpen(playlist.id)}
+                        >
+                          <p className="text-sm text-white truncate">{playlist.name}</p>
+                          <p className="text-xs text-neutral-400 truncate">{playlist.isAlbum ? "Album" : "Playlist"}</p>
+                        </button>
+                      ))
+                    )}
+
+                    <div className="px-3 pt-2 pb-1 text-xs uppercase tracking-wider text-neutral-500">Songs</div>
+                    {searchResults.songs.length === 0 ? (
+                      <p className="px-3 py-1 text-sm text-neutral-500">No songs</p>
+                    ) : (
+                      searchResults.songs.slice(0, 5).map((song: any) => (
+                        <div key={song.id} className="px-3 py-2 hover:bg-neutral-800">
+                          <p className="text-sm text-white truncate">{song.name}</p>
+                          <p className="text-xs text-neutral-400 truncate">
+                            {(song.authorNames || []).join(", ") || "Unknown artist"}
+                          </p>
+                        </div>
+                      ))
+                    )}
+
+                    <div className="px-3 pt-2 pb-1 text-xs uppercase tracking-wider text-neutral-500">Users</div>
+                    {searchResults.users.length === 0 ? (
+                      <p className="px-3 py-1 text-sm text-neutral-500">No users</p>
+                    ) : (
+                      searchResults.users.slice(0, 5).map((user: any) => (
+                        <div key={user.id} className="px-3 py-2 hover:bg-neutral-800">
+                          <p className="text-sm text-white truncate">{user.name}</p>
+                          <p className="text-xs text-neutral-400">{roleLabel(user.role)}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-        */}
+       
         {/* Right: account button with placeholder avatar and dropdown */}
         <div className="ml-4 relative" ref={dropdownRef}>
           <button
