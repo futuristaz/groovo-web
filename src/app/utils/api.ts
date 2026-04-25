@@ -414,3 +414,99 @@ export async function searchAll(query: string): Promise<SearchAllResponse> {
     playlists: data.playlists || data.Playlists || [],
   };
 }
+
+export interface FollowUserResponse {
+  id: string;
+  name: string;
+  imageUrl: string;
+}
+
+export interface RelationshipStatusResponse {
+  iFollowThem: boolean;
+  theyFollowMe: boolean;
+  areFriends: boolean;
+}
+
+export async function followUser(targetUserId: string): Promise<void> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetchWithAuth(`${base}/api/v1/users/${targetUserId}/follow`, {
+    method: 'POST',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(`Follow failed: ${res.status} ${res.statusText} ${text || ''}`);
+  }
+}
+
+export async function unfollowUser(targetUserId: string): Promise<void> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetchWithAuth(`${base}/api/v1/users/${targetUserId}/follow`, {
+    method: 'DELETE',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(`Unfollow failed: ${res.status} ${res.statusText} ${text || ''}`);
+  }
+}
+
+export async function getRelationship(targetUserId: string): Promise<RelationshipStatusResponse> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetchWithAuth(`${base}/api/v1/users/${targetUserId}/relationship`, {
+    method: 'GET',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(`Get relationship failed: ${res.status} ${res.statusText} ${text || ''}`);
+  }
+
+  const json = await res.json().catch(() => null);
+  return (json?.data ?? json) as RelationshipStatusResponse;
+}
+
+export async function getFollowers(userId: string): Promise<FollowUserResponse[]> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetchWithAuth(`${base}/api/v1/users/${userId}/followers`, {
+    method: 'GET',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(`Get followers failed: ${res.status} ${res.statusText} ${text || ''}`);
+  }
+
+  const json = await res.json().catch(() => null);
+  return (json?.data ?? json ?? []) as FollowUserResponse[];
+}
+
+export async function getFollowing(userId: string): Promise<FollowUserResponse[]> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetchWithAuth(`${base}/api/v1/users/${userId}/following`, {
+    method: 'GET',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(`Get following failed: ${res.status} ${res.statusText} ${text || ''}`);
+  }
+
+  const json = await res.json().catch(() => null);
+  return (json?.data ?? json ?? []) as FollowUserResponse[];
+}
+
+export async function getFriends(userId: string): Promise<FollowUserResponse[]> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetchWithAuth(`${base}/api/v1/users/${userId}/friends`, {
+    method: 'GET',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(`Get friends failed: ${res.status} ${res.statusText} ${text || ''}`);
+  }
+
+  const json = await res.json().catch(() => null);
+  return (json?.data ?? json ?? []) as FollowUserResponse[];
+}

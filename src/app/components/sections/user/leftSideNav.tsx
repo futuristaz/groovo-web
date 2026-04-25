@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from "react";
 import SavedEntry from "@/src/app/components/ui/savedEntry";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { fetchUserPlaylists, createPlaylist } from "@/src/app/utils/api";
 import { useUserId } from "@/src/app/utils/auth";
 import CreatePlaylistModal from "@/src/app/components/ui/createPlaylistModal";
@@ -22,6 +22,7 @@ export default function UserLeftSideNav() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const userId = useUserId();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     async function fetchData() {
@@ -32,11 +33,8 @@ export default function UserLeftSideNav() {
 
       try {
         setLoading(true);
-
         const data = await fetchUserPlaylists(userId);
         const playlists = data?.data || data || [];
-
-        // Filter only playlists (not albums) for users
         const userPlaylists = playlists.filter((p: any) => !p.isAlbum);
 
         const formattedEntries: Entry[] = userPlaylists.map((playlist: any) => ({
@@ -58,7 +56,6 @@ export default function UserLeftSideNav() {
     fetchData();
   }, [userId, refreshTrigger]);
 
-  // Refresh when playlists changed elsewhere
   useEffect(() => {
     const handler = () => setRefreshTrigger((v) => v + 1);
     if (typeof window !== 'undefined') {
@@ -72,15 +69,9 @@ export default function UserLeftSideNav() {
   }, []);
 
   const handleCreatePlaylist = async (name: string, description: string, ownerIds: string[], picture?: string, isPublic: boolean = true) => {
-    console.log("handleCreatePlaylist called");
-    if (!userId) {
-      console.log("No userId");
-      return;
-    }
-    
+    if (!userId) return;
     try {
-      console.log("Creating playlist with:", { name, description, isAlbum: false });
-      const response = await createPlaylist({
+      await createPlaylist({
         name,
         description,
         picture: picture || "",
@@ -88,20 +79,33 @@ export default function UserLeftSideNav() {
         isAlbum: false,
         ownerIds,
       });
-      
-      console.log("Response:", response);
-      console.log("Playlist created successfully, refreshing left side nav...");
       setRefreshTrigger((prev) => prev + 1);
     } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      const message = errorMessage || "Failed to create playlist";
-      console.error("Error creating playlist:", err);
-      toast.error(message);
+      toast.error(errorMessage || "Failed to create playlist");
     }
   };
 
+  const isFriendsPage = pathname === '/user/friends';
+
   return (
     <div className="h-full w-[300px] flex flex-col gap-2 bg-neutral-900 rounded-lg p-4 pt-4">
+
+      {/* Friends nav link */}
+      <button
+        onClick={() => router.push('/user/friends')}
+        className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+          isFriendsPage
+            ? 'bg-neutral-700 text-white'
+            : 'text-gray-400 hover:text-white hover:bg-neutral-800'
+        }`}
+      >
+        <span className="text-lg">👥</span>
+        Friends
+      </button>
+
+      <div className="border-t border-neutral-700 my-1" />
+
       <h1 className="text-md font-semibold">Your Playlists</h1>
 
       {loading ? (
@@ -126,7 +130,6 @@ export default function UserLeftSideNav() {
               <SavedEntry key={entry.id} entry={entry} />
             ))}
           </div>
-
           <button
             onClick={() => setIsModalOpen(true)}
             className="mt-2 w-full text-center py-2 text-sm text-gray-400 hover:text-white hover:bg-neutral-800 rounded transition-colors"
