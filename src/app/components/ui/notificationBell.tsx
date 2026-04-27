@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNotifications } from '@/src/app/contexts/NotificationContext';
 
 export default function NotificationBell() {
-  const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
+  const { notifications, unreadCount, markAllRead, markOneRead, clearAll } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -17,29 +17,40 @@ export default function NotificationBell() {
     return () => document.removeEventListener('click', handle);
   }, []);
 
-  const handleOpen = () => {
-    setOpen((s) => !s);
-  };
-
   const handleMarkAllRead = async () => {
     await markAllRead();
   };
 
-  const handleMarkOne = async (id: string) => {
-    await markOneRead(id);
+  const handleMarkOne = async (id: string, isRead: boolean) => {
+    if (!isRead) await markOneRead(id);
+  };
+
+  const handleClearAll = () => {
+    clearAll();
+    setOpen(false);
   };
 
   return (
     <div className="relative" ref={ref}>
       {/* Bell button */}
       <button
-        onClick={handleOpen}
+        onClick={() => setOpen((s) => !s)}
         className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-neutral-700 transition-colors"
         aria-label="Notifications"
       >
-        {/* Bell icon */}
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-5 h-5 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+          />
         </svg>
 
         {/* Unread badge */}
@@ -57,14 +68,24 @@ export default function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-700">
             <span className="text-sm font-semibold text-white">Notifications</span>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-              >
-                Mark all read
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Mark all read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           {/* List */}
@@ -78,7 +99,7 @@ export default function NotificationBell() {
               notifications.map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => !n.isRead && handleMarkOne(n.id)}
+                  onClick={() => handleMarkOne(n.id, n.isRead)}
                   className={`flex items-start gap-3 px-4 py-3 border-b border-neutral-800 cursor-pointer transition-colors hover:bg-neutral-800 ${
                     !n.isRead ? 'bg-neutral-800/60' : ''
                   }`}

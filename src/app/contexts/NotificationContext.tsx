@@ -15,6 +15,7 @@ type NotificationContextType = {
   unreadCount: number;
   markAllRead: () => Promise<void>;
   markOneRead: (id: string) => Promise<void>;
+  clearAll: () => void;
   refresh: () => Promise<void>;
 };
 
@@ -23,6 +24,7 @@ const NotificationContext = createContext<NotificationContextType>({
   unreadCount: 0,
   markAllRead: async () => {},
   markOneRead: async () => {},
+  clearAll: () => {},
   refresh: async () => {},
 });
 
@@ -95,8 +97,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
+  // Client-side only — clears the visible list and badge without a server call.
+  // Notifications will reappear on next full refresh/reload unless a server
+  // delete endpoint is added later.
+  const clearAll = () => {
+    setNotifications([]);
+    setUnreadCount(0);
+  };
+
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAllRead, markOneRead, refresh }}>
+    <NotificationContext.Provider
+      value={{ notifications, unreadCount, markAllRead, markOneRead, clearAll, refresh }}
+    >
       {children}
     </NotificationContext.Provider>
   );
