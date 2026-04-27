@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useUserType, useUserName } from "@/src/app/utils/auth";
 import { searchAll, type SearchAllResponse } from "@/src/app/utils/api";
 import Link from "../ui/link";
+import NotificationBell from "@/src/app/components/ui/notificationBell";
 
 export default function TopNav() {
   const [open, setOpen] = useState(false);
@@ -191,8 +192,11 @@ export default function TopNav() {
           </div>
         </div>
        
-        {/* Right: account button with placeholder avatar and dropdown */}
-        <div className="ml-4 relative" ref={dropdownRef}>
+        {/* Right: notification bell + account dropdown */}
+        <div className="flex items-center gap-2 ml-4">
+          <NotificationBell />
+
+          <div className="relative" ref={dropdownRef}>
           <button
             aria-haspopup="true"
             aria-expanded={open}
@@ -249,6 +253,7 @@ export default function TopNav() {
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
     </nav>

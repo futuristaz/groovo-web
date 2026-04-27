@@ -510,3 +510,41 @@ export async function getFriends(userId: string): Promise<FollowUserResponse[]> 
   const json = await res.json().catch(() => null);
   return (json?.data ?? json ?? []) as FollowUserResponse[];
 }
+// ─── Notifications API ───────────────────────────────────────────────────────
+
+export interface NotificationResponse {
+  id: string;
+  actorId: string;
+  actorName: string;
+  actorImageUrl: string;
+  type: 'NewFollower' | 'NewFriend';
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export async function getNotifications(): Promise<NotificationResponse[]> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetchWithAuth(`${base}/api/v1/notifications`, { method: 'GET' });
+  if (!res.ok) throw new Error(`Get notifications failed: ${res.status}`);
+  const json = await res.json().catch(() => null);
+  return (json?.data ?? json ?? []) as NotificationResponse[];
+}
+
+export async function getUnreadCount(): Promise<number> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  const res = await fetchWithAuth(`${base}/api/v1/notifications/unread-count`, { method: 'GET' });
+  if (!res.ok) throw new Error(`Get unread count failed: ${res.status}`);
+  const json = await res.json().catch(() => null);
+  return (json?.data ?? json ?? 0) as number;
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  await fetchWithAuth(`${base}/api/v1/notifications/read-all`, { method: 'PUT' });
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+  await fetchWithAuth(`${base}/api/v1/notifications/${id}/read`, { method: 'PUT' });
+}

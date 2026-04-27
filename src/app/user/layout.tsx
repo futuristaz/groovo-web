@@ -7,6 +7,7 @@ import Player from "@/src/app/components/sections/player";
 import { Song } from "@/src/app/types/song";
 import { useAuthGuard, useUserType } from "@/src/app/utils/auth";
 import { SignalRProvider } from "@/src/app/contexts/SignalRContext";
+import { NotificationProvider } from "@/src/app/contexts/NotificationContext";
 import { useRouter } from "next/navigation";
 
 export const PlayerContext = React.createContext<{
@@ -59,6 +60,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <SignalRProvider>
+      <NotificationProvider>
       <PlayerContext.Provider
         value={{
           currentSong,
@@ -92,6 +94,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
           <Player />
         </div>
       </PlayerContext.Provider>
+      </NotificationProvider>
     </SignalRProvider>
   );
 }
